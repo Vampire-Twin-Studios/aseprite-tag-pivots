@@ -1,0 +1,18 @@
+{
+  "name": "tag-pivots",
+  "displayName": "Tag Pivots",
+  "description": "Allow supplying a pivot for each animation tag",
+  "version": "0.1",
+  "author": { "name": "Shervin Mortazavi",
+              "email": "shervin.mortazavi@outlook.com",
+              "url": "" },
+  "contributors": [ ],
+  "publisher": "Shervin Mortazavi",
+  "license": "CC-BY-4.0",
+  "categories": [ "Scripts" ],
+  "contributes": {
+    "scripts": [
+        { "path": "./tag-pivots.lua" }
+    ]
+  }
+}
