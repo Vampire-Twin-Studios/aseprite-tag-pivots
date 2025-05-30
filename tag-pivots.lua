@@ -58,12 +58,20 @@ function init(plugin)
     group = "tag_popup_properties",
     onclick = function()
       local sprite = app.activeSprite
-      local tag = app.activeTag
-
-      if not sprite or not tag then
-        app.alert("You must select a tag.")
+      if not sprite or #sprite.tags == 0 then
+        app.alert("This sprite has no tags.")
         return
       end
+      
+      -- Build tag options
+      local tagNames = {}
+      local tagMap = {}
+      for _, t in ipairs(sprite.tags) do
+        table.insert(tagNames, t.name)
+        tagMap[t.name] = t
+      end
+      local tagName = tagNames[1]
+      local tag = tagMap[tagName]
 
       local existing = tag.data["pivot"] or {}
       local defaultX, defaultY = presets["Bottom"](sprite)
@@ -84,7 +92,31 @@ function init(plugin)
 
       drawPreviewMarker(sprite, pivotX, pivotY)
 
-      local dlg = Dialog("Set Pivot for Tag: " .. tag.name)
+      local dlg = Dialog("Set Pivot")
+
+      -- Select tag
+      dlg:combobox{
+        id = "tag",
+        label = "Tag",
+        option = tagName,
+        options = tagNames,
+        onchange = function()
+          tagName = dlg.data.tag
+          tag = tagMap[tagName]
+          -- Change frame if outside selected tag
+          local currentFrame = app.activeFrame.frameNumber
+          if currentFrame < tag.fromFrame.frameNumber or currentFrame > tag.toFrame.frameNumber then
+            app.activeFrame = tag.fromFrame.frameNumber
+          end
+
+          -- Update preview marker if needed
+          local existing = tag.properties(PLUGIN_KEY).pivot or {}
+          local defaultX, defaultY = presets["Bottom"](sprite)
+          local pivotX = tonumber(existing.x) or defaultX
+          local pivotY = tonumber(existing.y) or defaultY
+          drawPreviewMarker(sprite, pivotX, pivotY)
+        end
+      }
 
       local function updateFields()
         local choice = dlg.data.preset
