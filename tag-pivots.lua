@@ -92,7 +92,12 @@ function init(plugin)
 
       drawPreviewMarker(sprite, pivotX, pivotY)
 
-      local dlg = Dialog("Set Pivot")
+      local dlg = Dialog{
+        title = "Set Pivot",
+        onclose = function()
+          app.refresh()
+        end
+      }
 
       -- Select tag
       dlg:combobox{
