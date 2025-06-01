@@ -65,9 +65,9 @@ end
 
 --=============================================================================
 
-function getPreset(x, y)
+function getPreset(sprite, x, y)
   for name, fn in pairs(presets) do
-    local px, py = fn(app.activeSprite)
+    local px, py = fn(sprite)
     if px == x and py == y then
       return name
     end
@@ -77,12 +77,12 @@ end
 
 --=============================================================================
 
-function getTagPivot(tag)
+function getTagPivot(sprite, tag)
   local properties = tag.properties(PLUGIN_KEY)
   if properties and properties.pivot then
     return properties.pivot.x, properties.pivot.y
   end
-  return presets["Bottom"](app.activeSprite)
+  return presets["Bottom"](sprite)
 end
 
 --=============================================================================
@@ -116,10 +116,10 @@ function init(plugin)
       local selectedTag = tagMap[selectedTagName]
 
       -- Get pivot for selected tag
-      local pivotX, pivotY = getTagPivot(selectedTag)
+      local pivotX, pivotY = getTagPivot(sprite, selectedTag)
 
       -- Determine preset name from pivot
-      local selectedPreset = getPreset(pivotX, pivotY)
+      local selectedPreset = getPreset(sprite, pivotX, pivotY)
 
       -- Initial draw of the preview marker
       drawPreviewMarker(sprite, pivotX, pivotY)
@@ -128,6 +128,7 @@ function init(plugin)
       local dlg = Dialog{
         title = "Set Pivot",
         onclose = function()
+          clearPreviewLayer(sprite)
           app.refresh()
         end
       }
@@ -147,10 +148,14 @@ function init(plugin)
             app.activeFrame = selectedTag.fromFrame.frameNumber
           end
           
-          -- Update pivot values
-          pivotX, pivotY = getTagPivot(selectedTag)
+          -- Update pivot and preset values
+          pivotX, pivotY = getTagPivot(sprite, selectedTag)
+          selectedPreset = getPreset(sprite, pivotX, pivotY)
+          dlg:modify{id="preset", option=selectedPreset}
+          dlg:modify{id="x", text=tostring(pivotX)}
+          dlg:modify{id="y", text=tostring(pivotY)}
 
-          -- Update preview marker if needed
+          -- Update preview marker
           drawPreviewMarker(sprite, pivotX, pivotY)
         end
       }
@@ -162,13 +167,9 @@ function init(plugin)
           local px, py = presets[choice](sprite)
           dlg:modify{id="x", text=tostring(px), enabled=false}
           dlg:modify{id="y", text=tostring(py), enabled=false}
-          drawPreviewMarker(sprite, px, py)
         else
           dlg:modify{id="x", enabled=true}
           dlg:modify{id="y", enabled=true}
-          local x = tonumber(dlg.data.x or pivotX)
-          local y = tonumber(dlg.data.y or pivotY)
-          drawPreviewMarker(sprite, x, y)
         end
       end
 
@@ -216,17 +217,21 @@ function init(plugin)
 
           -- Print current scoped pivot value
           local pluginProperties = selectedTag.properties(PLUGIN_KEY)
-          if pluginProperties then
-            local pivot = selectedTag.properties(PLUGIN_KEY).pivot
-            if pivot then
-              print("Tag Pivot Data (before):", pivot.x, pivot.y)
-            else
-              print("Tag Pivot Data (before): nil")
-            end
+          if not pluginProperties then
+            selectedTag.properties(PLUGIN_KEY, {pivot = {}})
+            pluginProperties = selectedTag.properties(PLUGIN_KEY)
+          end
+
+          -- Debug
+          local pivot = pluginProperties.pivot
+          if pivot then
+            print("Tag Pivot Data (before):", pivot.x, pivot.y)
+          else
+            print("Tag Pivot Data (before): nil")
           end
 
           -- Set pivot scoped to this plugin
-          selectedTag.properties(PLUGIN_KEY).pivot = {x = x, y = y}
+          pluginProperties.pivot = {x = x, y = y}
 
           clearPreviewLayer(sprite)
           app.alert("Pivot saved: (" .. x .. ", " .. y .. ")")
