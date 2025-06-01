@@ -7,7 +7,7 @@
 --=============================================================================
 
 local Dialog = Dialog
-local PLUGIN_KEY = "tag-pivot"
+local PLUGIN_KEY = "WolvenBard/tag-pivots"
 local PREVIEW_LAYER_NAME = "__PivotPreviewTemp"
 
 local presets = {
