@@ -93,6 +93,77 @@ end
 -- INIT
 --=============================================================================
 
+function injectTagProperties()
+  local tag = app.tag
+  if not tag then
+    app.alert("No active tag.")
+    return
+  end
+  tag.properties = {}
+  tag.properties.user_defined_data = "tag user defined data"
+  local props = tag.properties("my-plugin")
+  if not props then
+    tag.properties("my-plugin", {})
+    props = tag.properties("my-plugin")
+  end
+  props.extension_defined_data = "tag extension defined data"
+  app.alert("Injected tag properties.")
+end
+
+function injectCelProperties()
+  local cel = app.cel
+  if not cel then
+    app.alert("No active cel.")
+    return
+  end
+  cel.properties = {}
+  cel.properties.user_defined_data = "cel user defined data"
+  local props = cel.properties("my-plugin")
+  if not props then
+    cel.properties("my-plugin", {})
+    props = cel.properties("my-plugin")
+  end
+  props.extension_defined_data = "cel extension defined data"
+  app.alert("Injected cel properties.")
+end
+
+function injectSliceProperties()
+  local sprite = app.activeSprite
+  if not sprite or #sprite.slices == 0 then
+    app.alert("No slices in sprite.")
+    return
+  end
+  local slice = sprite.slices[1]
+  slice.properties = {}
+  slice.properties.user_defined_data = "slice user defined data"
+  local props = slice.properties("my-plugin")
+  if not props then
+    slice.properties("my-plugin", {})
+    props = slice.properties("my-plugin")
+  end
+  props.extension_defined_data = "slice extension defined data"
+  app.alert("Injected slice properties.")
+end
+
+function injectLayerProperties()
+  local layer = app.layer
+  if not layer then
+    app.alert("No active layer.")
+    return
+  end
+  layer.properties = {}
+  layer.properties.user_defined_data = "layer user defined data"
+  local props = layer.properties("my-plugin")
+  if not props then
+    layer.properties("my-plugin", {})
+    props = layer.properties("my-plugin")
+  end
+  props.extension_defined_data = "layer extension defined data"
+  app.alert("Injected layer properties.")
+end
+
+
+
 function init(plugin)
   plugin:newCommand{
     id = "SetTagPivot",
@@ -254,6 +325,35 @@ function init(plugin)
       clearPreviewLayer(sprite)
     end
   }
+
+  plugin:newCommand{
+    id = "InjectTagProperties",
+    title = "Inject Tag Properties",
+    group = "tag_popup_properties",
+    onclick = injectTagProperties
+  }
+
+  plugin:newCommand{
+    id = "InjectCelProperties",
+    title = "Inject Cel Properties",
+    group = "cel_popup_properties",
+    onclick = injectCelProperties
+  }
+
+  plugin:newCommand{
+    id = "InjectSliceProperties",
+    title = "Inject Slice Properties",
+    group = "slice_popup_properties",
+    onclick = injectSliceProperties
+  }
+
+  plugin:newCommand{
+    id = "InjectLayerProperties",
+    title = "Inject Layer Properties",
+    group = "layer_popup_properties",
+    onclick = injectLayerProperties
+  }
+
 end
 
 --=============================================================================
