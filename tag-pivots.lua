@@ -6,9 +6,12 @@
 -- CONSTANTS
 --=============================================================================
 
-local Dialog = Dialog
-local PLUGIN_KEY = "WolvenBard/tag-pivots"
+local PLUGIN_KEY = ""
 local PREVIEW_LAYER_NAME = "__PivotPreviewTemp"
+local DEBUG = false
+local function debugPrint(...)
+  if DEBUG then print(...) end
+end
 
 local presets = {
   ["Center"] = function(s) return math.floor(s.width/2), math.floor(s.height/2) end,
@@ -48,6 +51,7 @@ end
 --=============================================================================
 
 function drawPreviewMarker(sprite, x, y)
+  if not x or not y then return end
   local layer = ensurePreviewLayer(sprite)
   for _, cel in ipairs(layer.cels) do sprite:deleteCel(cel) end
   
@@ -171,6 +175,7 @@ function init(plugin)
           dlg:modify{id="x", enabled=true}
           dlg:modify{id="y", enabled=true}
         end
+        drawPreviewMarker(sprite, tonumber(dlg.data.x), tonumber(dlg.data.y))
       end
 
       -- Update preview helper whenever number fields change
@@ -225,9 +230,9 @@ function init(plugin)
           -- Debug
           local pivot = pluginProperties.pivot
           if pivot then
-            print("Tag Pivot Data (before):", pivot.x, pivot.y)
+            debugPrint("Tag Pivot Data (before):", pivot.x, pivot.y)
           else
-            print("Tag Pivot Data (before): nil")
+            debugPrint("Tag Pivot Data (before): nil")
           end
 
           -- Set pivot scoped to this plugin
@@ -256,5 +261,5 @@ end
 --=============================================================================
 
 function exit(plugin)
-  --print("Exiting Tag Pivot Setter")
+  -- No op
 end
