@@ -90,6 +90,53 @@ function getTagPivot(sprite, tag)
 end
 
 --=============================================================================
+
+function setTagPivot(sprite, tag, x, y)
+  local properties = tag.properties(PLUGIN_KEY)
+  if not properties then
+    tag.properties(PLUGIN_KEY, {pivot = {}})
+    properties = tag.properties(PLUGIN_KEY)
+  end
+  properties.pivot = {x = x, y = y}
+end
+
+--=============================================================================
+
+function printTable(tbl, indent)
+  indent = indent or 0
+  local formatting = string.rep("  ", indent)
+  
+  for key, value in pairs(tbl) do
+    local keyStr = tostring(key)
+    if type(value) == "table" then
+      print(formatting .. keyStr .. " = {")
+      printTable(value, indent + 1)
+      print(formatting .. "}")
+    else
+      print(formatting .. keyStr .. " = " .. tostring(value))
+    end
+  end
+end
+
+--=============================================================================
+
+function afterCommandHandler(ev)
+    if ev.name == "NewFrameTag" then
+      -- Set all tags to have a default pivot if they don't have one
+      local sprite = app.activeSprite
+      if sprite and #sprite.tags > 0 then
+        for _, tag in ipairs(sprite.tags) do
+          local properties = tag.properties(PLUGIN_KEY)
+          if not properties or not properties.pivot then
+            local x, y = presets["Bottom"](sprite)
+            setTagPivot(sprite, tag, x, y)
+          end
+        end
+      end
+    end
+  end
+
+--=============================================================================
 -- INIT
 --=============================================================================
 
@@ -115,9 +162,18 @@ function init(plugin)
         tagMap[t.name] = t
       end
 
-      -- Default selection to first entry
-      local selectedTagName = tagNames[1]
-      local selectedTag = tagMap[selectedTagName]
+      -- Default selection to tag that contains the current frame otherwise first tag
+      local currentFrame = app.activeFrame.frameNumber
+      local selectedTag = nil
+      for _, tag in ipairs(sprite.tags) do
+        if currentFrame >= tag.fromFrame.frameNumber and currentFrame <= tag.toFrame.frameNumber then
+          selectedTag = tag
+          break
+        end
+      end
+      if not selectedTag then
+        selectedTag = sprite.tags[1]
+      end
 
       -- Get pivot for selected tag
       local pivotX, pivotY = getTagPivot(sprite, selectedTag)
@@ -141,11 +197,10 @@ function init(plugin)
       dlg:combobox{
         id = "tag",
         label = "Tag",
-        option = selectedTagName,
+        option = selectedTag.name,
         options = tagNames,
         onchange = function()
-          selectedTagName = dlg.data.tag
-          selectedTag = tagMap[selectedTagName]
+          selectedTag = tagMap[dlg.data.tag]
           -- Change frame if outside selected tag
           local currentFrame = app.activeFrame.frameNumber
           if currentFrame < selectedTag.fromFrame.frameNumber or currentFrame > selectedTag.toFrame.frameNumber then
@@ -209,7 +264,7 @@ function init(plugin)
         onchange = onPivotChanged
       }
       dlg:button{
-        text = "OK",
+        text = "Apply",
         onclick = function()
           local preset = dlg.data.preset
           local x, y
@@ -220,33 +275,24 @@ function init(plugin)
             y = tonumber(dlg.data.y)
           end
 
-          -- Print current scoped pivot value
-          local pluginProperties = selectedTag.properties(PLUGIN_KEY)
-          if not pluginProperties then
-            selectedTag.properties(PLUGIN_KEY, {pivot = {}})
-            pluginProperties = selectedTag.properties(PLUGIN_KEY)
-          end
+          -- Set pivot 
+          setTagPivot(sprite, selectedTag, x, y)
 
-          -- Debug
-          local pivot = pluginProperties.pivot
-          if pivot then
-            debugPrint("Tag Pivot Data (before):", pivot.x, pivot.y)
-          else
-            debugPrint("Tag Pivot Data (before): nil")
-          end
-
-          -- Set pivot scoped to this plugin
-          pluginProperties.pivot = {x = x, y = y}
-
-          clearPreviewLayer(sprite)
-          app.alert("Pivot saved: (" .. x .. ", " .. y .. ")")
+          -- Update the info label
+          dlg:modify{
+            id = "info",
+            text = "Pivot saved: (" .. x .. ", " .. y .. ")",
+            color = Color{ r=0, g=180, b=0 }
+          }
         end
       }
-      dlg:button{
-        text = "Cancel",
-        onclick = function()
-          clearPreviewLayer(sprite)
-        end
+
+      -- Add this label below the buttons (add it after the buttons)
+      dlg:label{
+        id = "info",
+        label = "",
+        text = string.rep(" ", 25),
+        color = Color{ r=0, g=180, b=0 }
       }
 
       app.refresh()
@@ -254,6 +300,8 @@ function init(plugin)
       clearPreviewLayer(sprite)
     end
   }
+
+  app.events:on('aftercommand', afterCommandHandler)
 end
 
 --=============================================================================
@@ -261,5 +309,5 @@ end
 --=============================================================================
 
 function exit(plugin)
-  -- No op
+  app.events:off('aftercommand', afterCommandHandler)
 end
